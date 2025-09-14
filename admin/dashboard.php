@@ -257,10 +257,10 @@ if ($db_conn_page_load->connect_error) {
         .notification-icon { font-size: 1.5rem; margin-right: 0.75rem; } .notification-content { flex-grow: 1; } .notification-title { font-weight: 700; margin-bottom: 0.25rem; } .notification-message { font-size: 0.875rem; color: #ccc; }
         .notification-close { margin-left: 0.75rem; cursor: pointer; color: #aaa; } .notification-close:hover { color: #fff; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
+        .modal-overlay.active { display: flex; opacity: 1; visibility: visible; }
         .modal-content { background-color: #1a1a1a; padding: 2.5rem; border-radius: 0.5rem; width: 90%; max-height: 90vh; overflow-y: auto; transform: translateY(-20px); transition: transform 0.3s ease-in-out; border: 1px solid rgba(212, 175, 55, 0.3); position: relative; }
-        #bookingDetailsModal .modal-content { max-width: 600px; }
+        #bookingDetailsModal .modal-content, #editBookingModal .modal-content { max-width: 600px; }
         .modal-overlay.active .modal-content { transform: translateY(0); }
         .modal-close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; color: #aaa; cursor: pointer; transition: color 0.2s ease; }
         .modal-close-btn:hover { color: #fff; }
@@ -394,6 +394,7 @@ if ($db_conn_page_load->connect_error) {
                                 </td>
                                 <td class="whitespace-nowrap">
                                     <a href="#" class="text-blue-400 hover:text-blue-600 mr-2 view-details-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>" title="View Details"><i class="fas fa-eye"></i></a>
+                                    <a href="#" class="text-purple-400 hover:text-purple-600 mr-2 edit-booking-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>" title="Edit Booking"><i class="fas fa-edit"></i></a>
                                     <a href="mailto:<?php echo htmlspecialchars($booking['email']); ?>" class="text-yellow-400 hover:text-yellow-600 mr-2" title="Send Email"><i class="fas fa-envelope"></i></a>
                                     <a href="tel:<?php echo htmlspecialchars($booking['phone']); ?>" class="text-green-400 hover:text-green-600" title="Call Customer"><i class="fas fa-phone"></i></a>
                                 </td>
@@ -436,8 +437,9 @@ if ($db_conn_page_load->connect_error) {
                             </div>
                         </div>
                         <div class="mt-4 pt-3 flex justify-end gap-2 border-t border-gray-700">
-                            <button class="btn btn-primary text-xs px-3 py-2 view-details-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>"><i class="fas fa-eye mr-1"></i> View Details</button>
-                            <a href="https://maps.google.com/maps?q=<?php echo urlencode($booking['pickuplocation']); ?>" target="_blank" class="btn btn-secondary text-xs px-3 py-2"><i class="fas fa-directions mr-1"></i> Get Directions</a>
+                            <button class="btn btn-primary text-xs px-3 py-2 view-details-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>"><i class="fas fa-eye mr-1"></i> View</button>
+                            <button class="btn btn-secondary text-xs px-3 py-2 edit-booking-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>"><i class="fas fa-edit mr-1"></i> Edit</button>
+                            <a href="https://maps.google.com/?q=<?php echo urlencode($booking['pickuplocation']); ?>" target="_blank" class="btn btn-secondary text-xs px-3 py-2"><i class="fas fa-directions mr-1"></i> Directions</a>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -468,7 +470,7 @@ if ($db_conn_page_load->connect_error) {
 
     <div id="bookingDetailsModal" class="modal-overlay">
         <div class="modal-content">
-            <button class="modal-close-btn" id="closeBookingDetailsModalBtn"><i class="fas fa-times"></i></button>
+            <button class="modal-close-btn"><i class="fas fa-times"></i></button>
             <h3 class="monument text-2xl font-bold gold mb-6 text-center">Booking <span class="text-white">Details</span></h3>
             <div class="space-y-4 text-sm" id="modalBookingDetailsContent">
                 <div class="modal-detail-row"><span>ID:</span><span id="detailId" class="copyable-field"></span></div>
@@ -484,43 +486,83 @@ if ($db_conn_page_load->connect_error) {
                 <div class="modal-detail-row"><span>Booked On:</span><span id="detailCreatedAt" class="copyable-field"></span></div>
                 <div class="modal-detail-row"><span>Notes:</span><span id="detailNotes" class="copyable-field notes-content"></span></div>
             </div>
-            </div>
+        </div>
+    </div>
+    
+    <div id="editBookingModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn"><i class="fas fa-times"></i></button>
+            <h3 class="monument text-2xl font-bold gold mb-6 text-center">Edit <span class="text-white">Booking</span></h3>
+            <form id="editBookingForm">
+                <input type="hidden" id="editBookingId" name="booking_id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="editName" class="form-label">Name</label>
+                        <input type="text" id="editName" name="name" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" id="editEmail" name="email" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editPhone" class="form-label">Phone</label>
+                        <input type="tel" id="editPhone" name="phone" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editVehicle" class="form-label">Vehicle</label>
+                        <input type="text" id="editVehicle" name="vehicle" class="form-input" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="editPickupLocation" class="form-label">Pickup Location</label>
+                        <input type="text" id="editPickupLocation" name="pickupLocation" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editPickupDate" class="form-label">Pickup Date</label>
+                        <input type="date" id="editPickupDate" name="pickupDate" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editPickupTime" class="form-label">Pickup Time</label>
+                        <input type="time" id="editPickupTime" name="pickupTime" class="form-input" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="editDropoffLocation" class="form-label">Dropoff Location</label>
+                        <input type="text" id="editDropoffLocation" name="dropoffLocation" class="form-input" required>
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="editStatus" class="form-label">Status</label>
+                        <select id="editStatus" name="status" class="form-input">
+                            <option value="Pending">Pending</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="editNotes" class="form-label">Notes</label>
+                        <textarea id="editNotes" name="notes" rows="3" class="form-input"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 text-right">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <audio id="newBookingSound" src="../assets/sounds/notification.mp3" preload="auto"></audio>
 
-    <script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
-    const statusSelects = document.querySelectorAll('.status-select');
-    const notificationContainer = document.getElementById('notificationContainer');
-    const newBookingAlertModal = document.getElementById('newBookingAlertModal');
-    const closeNewBookingAlertBtn = document.getElementById('closeNewBookingAlertBtn');
-    const viewAllBookingsBtn = document.getElementById('viewAllBookingsBtn');
-
-    const newBookingSound = document.getElementById('newBookingSound');
-    const bookingDetailsModal = document.getElementById('bookingDetailsModal');
-    const closeBookingDetailsModalBtn = document.getElementById('closeBookingDetailsModalBtn');
-    const copyableFields = document.querySelectorAll('.copyable-field');
-    
-    // const acceptBookingBtn = document.getElementById('acceptBookingBtn'); // Button removed from modal
-    // const cancelBookingBtn = document.getElementById('cancelBookingBtn'); // Button removed from modal
-
+    // --- Reusable Notification Function ---
     function showNotification(type, title, message) {
+        const notificationContainer = document.getElementById('notificationContainer');
         const notification = document.createElement('div');
         notification.classList.add('notification', type);
-        notification.innerHTML = `
-            <div class="notification-icon">${type === 'success' ? '<i class="fas fa-check-circle"></i>' : (type === 'error' ? '<i class="fas fa-times-circle"></i>' : '<i class="fas fa-info-circle"></i>')}</div>
-            <div class="notification-content">
-                <h4 class="notification-title">${title}</h4>
-                <p class="notification-message">${message}</p>
-            </div>
-            <div class="notification-close"><i class="fas fa-times"></i></div>
-        `;
+        notification.innerHTML = `<div class="notification-icon">${type === 'success' ? '<i class="fas fa-check-circle"></i>' : (type === 'error' ? '<i class="fas fa-times-circle"></i>' : '<i class="fas fa-info-circle"></i>')}</div><div class="notification-content"><h4 class="notification-title">${title}</h4><p class="notification-message">${message}</p></div><div class="notification-close"><i class="fas fa-times"></i></div>`;
         if(notificationContainer) {
             notificationContainer.appendChild(notification);
         } else {
-            console.error("Notification container (notificationContainer) not found.");
-            alert(`${title}: ${message}`); 
+            alert(`${title}: ${message}`);
             return;
         }
         void notification.offsetWidth;
@@ -535,228 +577,224 @@ document.addEventListener('DOMContentLoaded', function() {
     function hideNotification(notificationElement) {
         if (!notificationElement || !notificationElement.classList.contains('active')) return;
         notificationElement.classList.remove('active');
-        notificationElement.addEventListener('transitionend', () => {
-            if (notificationElement.parentNode) {
-                 notificationElement.remove();
-            }
-        }, { once: true });
+        notificationElement.addEventListener('transitionend', () => notificationElement.remove(), { once: true });
     }
 
-    let currentBookingIdForModalDetails = null; 
+    // --- Modal Handling ---
+    const modals = {
+        details: document.getElementById('bookingDetailsModal'),
+        edit: document.getElementById('editBookingModal'),
+        alert: document.getElementById('newBookingAlertModal')
+    };
 
+    function openModal(modal) {
+        if (modal) modal.classList.add('active');
+    }
+
+    function closeModal(modal) {
+        if (modal) modal.classList.remove('active');
+    }
+
+    // --- Global Event Listener for Clicks ---
+    document.body.addEventListener('click', function(event) {
+        const viewBtn = event.target.closest('.view-details-btn');
+        if (viewBtn) {
+            event.preventDefault();
+            openBookingDetailsModal(viewBtn.dataset.bookingId);
+        }
+
+        const editBtn = event.target.closest('.edit-booking-btn');
+        if (editBtn) {
+            event.preventDefault();
+            openEditBookingModal(editBtn.dataset.bookingId);
+        }
+        
+        const closeBtn = event.target.closest('.modal-close-btn');
+        if(closeBtn) {
+             closeModal(closeBtn.closest('.modal-overlay'));
+        }
+        
+        if(event.target.classList.contains('modal-overlay')) {
+            closeModal(event.target);
+        }
+        
+        if(event.target.closest('#closeNewBookingAlertBtn')) {
+            closeModal(modals.alert);
+        }
+
+        if(event.target.closest('#viewAllBookingsBtn')) {
+            window.location.href = 'all-bookings.php';
+        }
+    });
+
+    // --- View Details Modal Logic ---
     function openBookingDetailsModal(bookingId) {
-        currentBookingIdForModalDetails = bookingId; 
-        // Since accept/cancel buttons are removed, these lines are not needed:
-        // if(acceptBookingBtn) acceptBookingBtn.dataset.bookingId = bookingId;
-        // if(cancelBookingBtn) cancelBookingBtn.dataset.bookingId = bookingId;
+        const contentDiv = document.getElementById('modalBookingDetailsContent');
+        if(contentDiv) {
+             Array.from(contentDiv.getElementsByClassName('copyable-field')).forEach(el => el.textContent = 'Loading...');
+        }
 
-        const detailIds = ['detailId', 'detailName', 'detailEmail', 'detailPhone', 'detailVehicle', 'detailPickupLocation', 'detailDropoffLocation', 'detailPickupDate', 'detailPickupTime', 'detailStatus', 'detailCreatedAt', 'detailNotes'];
-        detailIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.textContent = 'Loading...';
-            } else {
-                console.error(`Modal detail element with ID '${id}' not found! Please check dashboard.php HTML.`);
-            }
-        });
-
-        fetch(`fetch_booking_details.php?id=${bookingId}`)
-            .then(response => {
-                if (!response.ok) {
-                    return response.json()
-                        .then(errData => { throw new Error(errData.message || `HTTP error! Status: ${response.status}`); })
-                        .catch(() => response.text().then(text => { throw new Error(`HTTP error! Status: ${response.status} - Response: ${text.substring(0,100)}...`); }));
+        fetch(`fetch_booking_details.php?id=${bookingId}&json=true`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.booking) {
+                    const b = data.booking;
+                    const setDetail = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value || '-'; };
+                    setDetail('detailId', b.id);
+                    setDetail('detailName', b.name);
+                    setDetail('detailEmail', b.email);
+                    setDetail('detailPhone', b.phone);
+                    setDetail('detailVehicle', b.vehicle ? b.vehicle.charAt(0).toUpperCase() + b.vehicle.slice(1) : '');
+                    setDetail('detailPickupLocation', b.pickuplocation);
+                    setDetail('detailDropoffLocation', b.dropofflocation);
+                    setDetail('detailPickupDate', b.pickupdate ? new Date(b.pickupdate + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '');
+                    setDetail('detailPickupTime', b.pickuptime ? new Date('1970-01-01T' + b.pickuptime + 'Z').toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' }) : '');
+                    setDetail('detailStatus', b.status);
+                    setDetail('detailCreatedAt', b.created_at ? new Date(b.created_at).toLocaleString() : '');
+                    setDetail('detailNotes', b.notes);
+                    openModal(modals.details);
+                } else {
+                    showNotification('error', 'Error', data.message || 'Could not fetch booking details.');
                 }
-                return response.json();
             })
+            .catch(error => {
+                console.error('Fetch details error:', error);
+                showNotification('error', 'Network Error', 'Failed to fetch booking details.');
+            });
+    }
+
+    // --- Edit Booking Modal Logic ---
+    function openEditBookingModal(bookingId) {
+        fetch(`fetch_booking_details.php?id=${bookingId}&json=true`)
+            .then(response => response.json())
             .then(data => {
                 if (data.success && data.booking) {
                     const booking = data.booking;
-                    const setDetail = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value || '-'; };
-                    
-                    setDetail('detailId', booking.id);
-                    setDetail('detailName', booking.name);
-                    setDetail('detailEmail', booking.email);
-                    setDetail('detailPhone', booking.phone);
-                    setDetail('detailVehicle', booking.vehicle ? booking.vehicle.charAt(0).toUpperCase() + booking.vehicle.slice(1) : null);
-                    setDetail('detailPickupLocation', booking.pickuplocation);
-                    setDetail('detailDropoffLocation', booking.dropofflocation);
-                    setDetail('detailPickupDate', booking.pickupdate ? new Date(booking.pickupdate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null);
-                    setDetail('detailPickupTime', booking.pickuptime ? new Date('1970-01-01T' + booking.pickuptime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : null);
-                    setDetail('detailStatus', booking.status);
-                    setDetail('detailCreatedAt', booking.created_at ? new Date(booking.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : null);
-                    setDetail('detailNotes', booking.notes);
-
-                    if(bookingDetailsModal) bookingDetailsModal.classList.add('active');
+                    const form = document.getElementById('editBookingForm');
+                    form.querySelector('#editBookingId').value = booking.id;
+                    form.querySelector('#editName').value = booking.name;
+                    form.querySelector('#editEmail').value = booking.email;
+                    form.querySelector('#editPhone').value = booking.phone;
+                    form.querySelector('#editVehicle').value = booking.vehicle;
+                    form.querySelector('#editPickupLocation').value = booking.pickuplocation;
+                    form.querySelector('#editPickupDate').value = booking.pickupdate;
+                    form.querySelector('#editPickupTime').value = booking.pickuptime;
+                    form.querySelector('#editDropoffLocation').value = booking.dropofflocation;
+                    form.querySelector('#editNotes').value = booking.notes;
+                    form.querySelector('#editStatus').value = booking.status;
+                    openModal(modals.edit);
                 } else {
-                    showNotification('error', 'Error!', data.message || 'Could not fetch booking details.');
-                    detailIds.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '-';});
+                    showNotification('error', 'Error', data.message || 'Could not fetch booking details for editing.');
                 }
             })
             .catch(error => {
-                console.error('Error fetching or processing details:', error); 
-                showNotification('error', 'Network/Data Error!', `Could not fetch booking details. ${error.message}`);
-                detailIds.forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '-';});
+                console.error('Fetch for edit error:', error);
+                showNotification('error', 'Network Error', 'Failed to fetch booking data for editing.');
             });
     }
 
-    function updateBookingStatus(bookingId, newStatus) {
-        fetch('update_booking_status.php', { 
+    // --- Form Submission Logic ---
+    const editBookingForm = document.getElementById('editBookingForm');
+    if(editBookingForm) {
+        editBookingForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            fetch('edit_booking.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeModal(modals.edit);
+                    showNotification('success', 'Success', data.message);
+                    setTimeout(() => location.reload(), 1500); 
+                } else {
+                    showNotification('error', 'Error', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Submit edit form error:', error);
+                showNotification('error', 'Network Error', 'Could not save changes.');
+            })
+            .finally(() => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = 'Save Changes';
+            });
+        });
+    }
+
+    // --- Status Update Logic ---
+    document.querySelectorAll('.status-select').forEach(select => {
+        const originalStatus = select.value;
+        select.className = `status-select w-full status-${originalStatus.replace(/\s+/g, '-')}`;
+        select.addEventListener('change', function() {
+            const bookingId = this.dataset.bookingId;
+            const newStatus = this.value;
+            this.className = `status-select w-full status-${newStatus.replace(/\s+/g, '-')}`;
+            updateBookingStatus(bookingId, newStatus, this, originalStatus);
+        });
+    });
+
+    function updateBookingStatus(bookingId, newStatus, selectElement, originalStatus) {
+        fetch('all-bookings.php', { // The handler is at the top of all-bookings.php
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
-            body: `id=${bookingId}&status=${encodeURIComponent(newStatus)}`
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `action=update_booking_status&id=${bookingId}&status=${encodeURIComponent(newStatus)}`
         })
-        .then(response => {
-             if (!response.ok) {
-                return response.text().then(text => {throw new Error(`Server error: ${response.status} - ${text}`)});
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showNotification('success', 'Success!', data.message || `Booking ${bookingId} status updated to ${newStatus}.`);
-                const allSelectsForBooking = document.querySelectorAll(`.status-select[data-booking-id="${bookingId}"]`);
-                allSelectsForBooking.forEach(sel => { sel.value = newStatus; });
-                if (bookingDetailsModal && bookingDetailsModal.classList.contains('active') && currentBookingIdForModalDetails == bookingId) {
-                    const detailStatusEl = document.getElementById('detailStatus');
-                    if(detailStatusEl) detailStatusEl.textContent = newStatus;
-                }
+                showNotification('success', 'Status Updated', data.message);
             } else {
-                showNotification('error', 'Update Failed!', data.message || `Failed to update booking ${bookingId} status.`);
+                showNotification('error', 'Update Failed', data.message);
+                selectElement.value = originalStatus; // Revert on failure
+                selectElement.className = `status-select w-full status-${originalStatus.replace(/\s+/g, '-')}`;
             }
         })
         .catch(error => {
-            console.error('Error updating status:', error);
-            showNotification('error', 'Network Error!', `Could not connect for status update: ${error.message}`);
+            console.error('Update status error:', error);
+            showNotification('error', 'Network Error', 'Could not update status.');
+            selectElement.value = originalStatus; // Revert on network error
+             selectElement.className = `status-select w-full status-${originalStatus.replace(/\s+/g, '-')}`;
         });
     }
 
-    statusSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            updateBookingStatus(this.dataset.bookingId, this.value);
-        });
-    });
-
-    document.querySelectorAll('.view-details-btn').forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.preventDefault();
-            openBookingDetailsModal(this.dataset.bookingId);
-        });
-    });
-
-    if (closeBookingDetailsModalBtn) {
-        closeBookingDetailsModalBtn.addEventListener('click', function() {
-            if(bookingDetailsModal) bookingDetailsModal.classList.remove('active');
-        });
-    }
-    if (bookingDetailsModal) {
-        bookingDetailsModal.addEventListener('click', function(event) {
-            if (event.target === bookingDetailsModal) {
-                bookingDetailsModal.classList.remove('active');
-            }
-        });
-    }
-
-    copyableFields.forEach(field => {
-        field.addEventListener('click', function() {
-            const textToCopy = this.textContent;
-            if (!textToCopy || textToCopy === '-' || textToCopy.includes('Loading...')) return;
-            navigator.clipboard.writeText(textToCopy)
-                .then(() => { showNotification('info', 'Copied!', `'${textToCopy.substring(0,30).replace(/\n/g, ' ')}...' copied.`); })
-                .catch(err => {
-                    console.warn('Async clipboard copy failed, trying fallback:', err);
-                    const textArea = document.createElement('textarea');
-                    textArea.value = textToCopy;
-                    textArea.style.position = 'fixed'; textArea.style.left = '-999999px';
-                    document.body.appendChild(textArea);
-                    textArea.focus(); textArea.select();
-                    try { document.execCommand('copy'); showNotification('info', 'Copied!', `'${textToCopy.substring(0,30).replace(/\n/g, ' ')}...' (fallback).`); }
-                    catch (fallbackErr) { console.error('Fallback copy failed: ', fallbackErr); showNotification('error', 'Copy Failed!', 'Could not copy text.'); }
-                    finally { document.body.removeChild(textArea); }
-                });
-        });
-    });
-
-    if (closeNewBookingAlertBtn) {
-        closeNewBookingAlertBtn.addEventListener('click', function() {
-            if(newBookingAlertModal) newBookingAlertModal.classList.remove('active');
-        });
-    }
-
-    if (viewAllBookingsBtn) {
-        viewAllBookingsBtn.addEventListener('click', function() {
-            window.location.href = 'all-bookings.php';
-        });
-    }
-
-    // JavaScript for acceptBookingBtn and cancelBookingBtn is removed as the buttons are removed from this modal.
-    // If you re-add them, you would need to get their elements and add event listeners like before.
-
+    // --- New Booking Polling ---
+    const newBookingSound = document.getElementById('newBookingSound');
     let lastAlertedBookingId = sessionStorage.getItem('lastAlertedBookingId_dashboard');
-    let currentBookingIdForAlert = null; 
-    let isFirstSuccessfulCheckDone = false; 
-
     function checkNewBookings() {
         fetch('check_new_bookings.php')
-            .then(response => {
-                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.success && data.bookings.length > 0) {
-                    data.bookings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); 
-                    const latestBooking = data.bookings[0];
-
-                    if (latestBooking.id) {
-                        const latestBookingIdStr = latestBooking.id.toString();
-
-                        if (!isFirstSuccessfulCheckDone) {
-                            lastAlertedBookingId = latestBookingIdStr;
-                            sessionStorage.setItem('lastAlertedBookingId_dashboard', lastAlertedBookingId);
-                            isFirstSuccessfulCheckDone = true;
-                        } else {
-                            if (latestBookingIdStr !== lastAlertedBookingId) {
-                                if (newBookingSound) {
-                                    newBookingSound.play().catch(error => console.warn('Audio play failed:', error));
-                                }
-                                currentBookingIdForAlert = latestBooking.id; 
-                                if (newBookingAlertModal) {
-                                    newBookingAlertModal.classList.add('active');
-                                }
-                                showNotification('info', 'New Booking!', `Booking ID ${latestBooking.id} has arrived.`);
-                                
-                                lastAlertedBookingId = latestBookingIdStr;
-                                sessionStorage.setItem('lastAlertedBookingId_dashboard', lastAlertedBookingId);
-                            }
-                        }
-                    }
-                } else if (data.success && data.bookings.length === 0) { 
-                    if (!isFirstSuccessfulCheckDone) {
-                        isFirstSuccessfulCheckDone = true; 
+                    const latestBooking = data.bookings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+                    if (latestBooking.id && latestBooking.id.toString() !== lastAlertedBookingId) {
+                        if (newBookingSound) newBookingSound.play().catch(e => console.warn("Audio play failed:", e));
+                        openModal(modals.alert);
+                        lastAlertedBookingId = latestBooking.id.toString();
+                        sessionStorage.setItem('lastAlertedBookingId_dashboard', lastAlertedBookingId);
+                        showNotification('info', 'New Booking!', `Booking ID ${latestBooking.id} has arrived.`);
                     }
                 }
-            })
-            .catch(error => {
-                console.error('Error checking for new bookings:', error);
-                if (!isFirstSuccessfulCheckDone) { 
-                    isFirstSuccessfulCheckDone = true; 
-                }
-            });
+            }).catch(error => {});
     }
-
-    checkNewBookings(); 
-    const pollingInterval = 10000; 
-    let newBookingCheckInterval = setInterval(checkNewBookings, pollingInterval);
-
+    let newBookingCheckInterval = setInterval(checkNewBookings, 11000);
     document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") {
-            clearInterval(newBookingCheckInterval);
-        } else {
-            checkNewBookings(); 
-            newBookingCheckInterval = setInterval(checkNewBookings, pollingInterval);
+        clearInterval(newBookingCheckInterval);
+        if (document.visibilityState === "visible") {
+            checkNewBookings();
+            newBookingCheckInterval = setInterval(checkNewBookings, 11000);
         }
     });
+    checkNewBookings();
 });
-    </script>
+</script>
+
 </body>
 </html>

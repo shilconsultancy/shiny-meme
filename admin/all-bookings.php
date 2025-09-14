@@ -4,30 +4,30 @@ session_start();
 
 // -------------------------------------------------------------------------------------
 // IMPORTANT: VERIFY THIS PATH IS CORRECT!
-require_once 'auth_check.php'; 
+require_once 'auth_check.php';
 // -------------------------------------------------------------------------------------
 
 // --- BEGIN: AJAX Booking Status Update Handler (for status dropdowns) ---
 // This AJAX handler is part of all-bookings.php and processes POST requests to this same file.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_booking_status') {
     header('Content-Type: application/json');
-    
+
     // --- BEGIN: ADDED FOR EMAIL FUNCTIONALITY ---
     // Include our new email function file and the configuration file.
     // Assumes config.php is in the root 'BOOKING' folder, and email_functions.php is in 'admin'.
     require_once __DIR__ . '/../config.php';
     require_once __DIR__ . '/email_functions.php';
     // --- END: ADDED FOR EMAIL FUNCTIONALITY ---
-    
+
     // -------------------------------------------------------------------------------------
     // IMPORTANT: VERIFY THIS PATH IS CORRECT!
-    require_once '../db_connect.php'; 
+    require_once '../db_connect.php';
     // -------------------------------------------------------------------------------------
 
     $response = ['success' => false, 'message' => 'An error occurred processing your request.'];
     $booking_id = isset($_POST['id']) ? filter_var($_POST['id'], FILTER_VALIDATE_INT) : null;
     $new_status = $_POST['status'] ?? null;
-    
+
     $valid_statuses = ['Pending', 'Confirmed', 'Completed', 'Cancelled'];
 
     if ($booking_id === null || $booking_id === false) {
@@ -55,9 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $stmt_update->bind_param("si", $new_status, $booking_id);
                     if ($stmt_update->execute()) {
                         if ($stmt_update->affected_rows > 0) {
-                            
+
                             // --- BEGIN: MODIFIED FOR EMAIL FUNCTIONALITY ---
-                            
+
                             // The status was updated. Now, fetch the full booking details to send the email.
                             $stmt_fetch = $conn_update->prepare("SELECT * FROM bookings WHERE id = ?");
                             $booking_details = null;
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             if ($booking_details) {
                                 // Attempt to send the email using our function
                                 $emailSent = sendBookingStatusEmail($booking_details);
-                                
+
                                 if ($emailSent) {
                                     // If email sent, add a note to the admin's success message
                                     $response['message'] .= " A confirmation email was sent.";
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 $response['message'] .= " Could not retrieve details to send an email.";
                                 error_log("AJAX Email Error (all-bookings.php): Could not fetch details for Booking ID: {$booking_id} after successful update.");
                             }
-                            
+
                             // --- END: MODIFIED FOR EMAIL FUNCTIONALITY ---
 
                         } else {
@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
     echo json_encode($response);
-    exit; 
+    exit;
 }
 // --- END: AJAX Booking Status Update Handler ---
 
@@ -144,7 +144,7 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 // ini_set('error_log', '/path/to/your_project/php-page-errors.log'); // Set a valid path
 
-require_once '../db_connect.php'; 
+require_once '../db_connect.php';
 
 $bookings = [];
 $message = '';
@@ -171,7 +171,7 @@ $db_conn_page_load = new mysqli($servername, $username, $password, $dbname);
 
 if ($db_conn_page_load->connect_error) {
     $errorMessage = "Database connection failed for page load: " . $db_conn_page_load->connect_error;
-    error_log("Page Load DB Connection Error (all-bookings.php): " . $errorMessage); 
+    error_log("Page Load DB Connection Error (all-bookings.php): " . $errorMessage);
     $message = "The page is currently unable to retrieve booking data. Please try again later.";
 } else {
     $db_conn_page_load->set_charset("utf8mb4");
@@ -217,7 +217,7 @@ if ($db_conn_page_load->connect_error) {
         $total_bookings_row = $result_count->fetch_assoc();
         $total_bookings = $total_bookings_row ? $total_bookings_row['total'] : 0;
         $stmt_count->close();
-        
+
         $total_pages = $items_per_page > 0 ? ceil($total_bookings / $items_per_page) : 0;
         if ($total_pages == 0 && $total_bookings > 0) $total_pages = 1;
         if ($total_pages == 0) $total_pages = 1;
@@ -237,9 +237,9 @@ if ($db_conn_page_load->connect_error) {
         $final_params = $search_params;
         $final_param_types = $search_param_types;
 
-        $final_params[] = $items_per_page; 
+        $final_params[] = $items_per_page;
         $final_param_types .= "i";
-        $final_params[] = $offset;        
+        $final_params[] = $offset;
         $final_param_types .= "i";
 
         $stmt = $db_conn_page_load->prepare($sql_select);
@@ -247,8 +247,8 @@ if ($db_conn_page_load->connect_error) {
         if ($stmt === false) {
             throw new Exception("SQL select prepare failed: " . $db_conn_page_load->error . " (Query: " . $sql_select . ")");
         }
-        
-        if (!empty($final_param_types)) { 
+
+        if (!empty($final_param_types)) {
             $bind_names = [$final_param_types];
             for ($i = 0; $i < count($final_params); $i++) {
                 $bind_name = 'param' . $i;
@@ -277,9 +277,9 @@ if ($db_conn_page_load->connect_error) {
         } else {
             throw new Exception("SQL select execute failed: " . $stmt->error);
         }
-    } catch (Exception $e) { 
+    } catch (Exception $e) {
         $errorMessage = "Error fetching bookings for page display: " . $e->getMessage();
-        error_log("Page Load Data Fetch Error (all-bookings.php): " . $errorMessage); 
+        error_log("Page Load Data Fetch Error (all-bookings.php): " . $errorMessage);
         $message = "There was an error retrieving booking information for the page. Please try again.";
     }
     $db_conn_page_load->close();
@@ -299,7 +299,6 @@ if ($db_conn_page_load->connect_error) {
         body { font-family: 'Montserrat', sans-serif; background-color: #000; color: #fff; min-height: 100vh; }
         .monument { font-family: 'Montserrat', sans-serif; font-weight: 800; letter-spacing: -0.5px; }
         .gold { color: #D4AF37; } .bg-gold { background-color: #D4AF37; }
-        
         .btn { padding: 0.75rem 1.5rem; border-radius: 0.25rem; font-weight: 600; letter-spacing: 0.5px; transition: all 0.3s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
         .btn-primary { background-color: #D4AF37; color: #000; }
         .btn-primary:hover { background-color: rgba(212, 175, 55, 0.9); transform: translateY(-2px); }
@@ -307,8 +306,6 @@ if ($db_conn_page_load->connect_error) {
         .btn-secondary { background-color: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); }
         .btn-secondary:hover { background-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
         .btn-secondary[disabled] { opacity: 0.5; cursor: default; }
-
-
         .form-input { width: 100%; padding: 0.75rem 1rem; border-radius: 0.25rem; background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; transition: all 0.3s ease; margin-bottom: 1rem; }
         .form-input:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2); background-color: rgba(255, 255, 255, 0.15); }
         .table-auto { border-collapse: collapse; width: 100%; }
@@ -319,29 +316,25 @@ if ($db_conn_page_load->connect_error) {
         .booking-card { background-color: #1a1a1a; border: 1px solid rgba(212, 175, 55, 0.2); }
         .booking-card p { word-break: break-all; }
         .status-Pending { color: orange; } .status-Confirmed { color: #28a745; } .status-Completed { color: #17a2b8; } .status-Cancelled { color: #dc3545; }
-        
-        select.status-select.status-Pending { color: orange !important; } 
-        select.status-select.status-Confirmed { color: #28a745 !important; } 
-        select.status-select.status-Completed { color: #17a2b8 !important; } 
+        select.status-select.status-Pending { color: orange !important; }
+        select.status-select.status-Confirmed { color: #28a745 !important; }
+        select.status-select.status-Completed { color: #17a2b8 !important; }
         select.status-select.status-Cancelled { color: #dc3545 !important; }
-
         .status-select { background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 6px 10px; border-radius: 0.25rem; cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23D4AF37%22%20d%3D%22M287%2C197.8L156.4%2C67.2c-4.4-4.4-11.5-4.4-15.9%2C0L5.4%2C197.8c-4.4%2C4.4-4.4%2C11.5%2C0%2C15.9l16.1%2C16.1c4.4%2C4.4%2C11.5%2C4.4%2C15.9%2C0L148.5%2C128l111%2C111c4.4%2C4.4%2C11.5%2C4.4%2C15.9%2C0l16.1-16.1c4.4-4.4%2C4.4-11.6%2C0-16z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 0.7em top 50%, 0 0; background-size: 0.65em auto, 100%; width: 100%; }
         .status-select:focus { outline: none; border-color: #D4AF37; box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2); }
         .status-select option { background-color: #1a1a1a; color: #fff; }
-        .status-select option.status-Pending { color: orange; } 
-        .status-select option.status-Confirmed { color: #28a745; } 
-        .status-select option.status-Completed { color: #17a2b8; } 
+        .status-select option.status-Pending { color: orange; }
+        .status-select option.status-Confirmed { color: #28a745; }
+        .status-select option.status-Completed { color: #17a2b8; }
         .status-select option.status-Cancelled { color: #dc3545; }
-
         .notification-container { position: fixed; top: 20px; right: 20px; z-index: 1050; max-width: 350px; width: 90%; }
         .notification { background-color: #1a1a1a; border-radius: 0.25rem; padding: 1rem; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; align-items: center; opacity: 0; transform: translateX(120%); transition: transform 0.4s ease-out, opacity 0.4s ease-out; margin-bottom: 10px; }
         .notification.active { opacity: 1; transform: translateX(0); }
         .notification.success { border-left: 4px solid #28a745; } .notification.error { border-left: 4px solid #dc3545; } .notification.info { border-left: 4px solid #17a2b8; }
         .notification-icon { font-size: 1.5rem; margin-right: 0.75rem; } .notification-content { flex-grow: 1; } .notification-title { font-weight: 700; margin-bottom: 0.25rem; } .notification-message { font-size: 0.875rem; color: #ccc; }
         .notification-close { margin-left: 0.75rem; cursor: pointer; color: #aaa; } .notification-close:hover { color: #fff; }
-        
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; }
+        .modal-overlay.active { opacity: 1; visibility: visible; display: flex; }
         .modal-content { background-color: #1a1a1a; padding: 2.5rem; border-radius: 0.5rem; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; transform: translateY(-20px); transition: transform 0.3s ease-in-out; border: 1px solid rgba(212, 175, 55, 0.3); position: relative; }
         .modal-overlay.active .modal-content { transform: translateY(0); }
         .modal-close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; color: #aaa; cursor: pointer; transition: color 0.2s ease; }
@@ -351,15 +344,13 @@ if ($db_conn_page_load->connect_error) {
         .copyable-field { color: rgba(255, 255, 255, 0.9); flex-grow: 1; word-break: break-word; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: background-color 0.2s ease; }
         .copyable-field:hover { background-color: rgba(212, 175, 55, 0.1); }
         .copyable-field.notes-content { white-space: pre-wrap; }
-        
         #newBookingAlertModal .modal-content { max-width: 450px; padding: 2.5rem; border: 2px solid #D4AF37; box-shadow: 0 0 30px rgba(212, 175, 55, 0.5); }
-        
         .pagination-container a, .pagination-container span { margin: 0 0.25rem; min-width: 40px; text-align: center; }
         .pagination-container span.current-page-indicator { background-color: #D4AF37; color: #000; padding: 0.75rem 1rem; border-radius: 0.25rem; font-weight: 600; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body class="flex flex-col">
-    
+
     <?php require_once 'admin_header.php'; // ?>
 
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -427,6 +418,7 @@ if ($db_conn_page_load->connect_error) {
                                 </td>
                                 <td class="whitespace-nowrap">
                                     <a href="#" class="text-blue-400 hover:text-blue-600 mr-2 view-details-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>" title="View Details"><i class="fas fa-eye"></i></a>
+                                    <a href="#" class="text-purple-400 hover:text-purple-600 mr-2 edit-booking-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>" title="Edit Booking"><i class="fas fa-edit"></i></a>
                                     <a href="mailto:<?php echo htmlspecialchars($booking['email']); ?>" class="text-yellow-400 hover:text-yellow-600 mr-2" title="Send Email"><i class="fas fa-envelope"></i></a>
                                     <a href="tel:<?php echo htmlspecialchars($booking['phone']); ?>" class="text-green-400 hover:text-green-600" title="Call Customer"><i class="fas fa-phone"></i></a>
                                 </td>
@@ -470,7 +462,8 @@ if ($db_conn_page_load->connect_error) {
                         </div>
                         <div class="mt-4 pt-3 flex justify-end gap-2 border-t border-gray-700">
                             <button class="btn btn-primary text-xs px-3 py-2 view-details-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>"><i class="fas fa-eye mr-1"></i> View Details</button>
-                            <a href="https://maps.google.com/maps?q=<?php echo urlencode($booking['pickuplocation']); ?>" target="_blank" class="btn btn-secondary text-xs px-3 py-2"><i class="fas fa-directions mr-1"></i> Get Directions</a>
+                            <button class="btn btn-secondary text-xs px-3 py-2 edit-booking-btn" data-booking-id="<?php echo htmlspecialchars($booking['id']); ?>"><i class="fas fa-edit mr-1"></i> Edit</button>
+                            <a href="https://maps.google.com/?q=<?php echo urlencode($booking['pickuplocation']); ?>" target="_blank" class="btn btn-secondary text-xs px-3 py-2"><i class="fas fa-directions mr-1"></i> Get Directions</a>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -478,14 +471,14 @@ if ($db_conn_page_load->connect_error) {
 
             <?php if (!empty($bookings) && $total_pages > 1): ?>
             <div class="mt-8 mb-4 flex flex-wrap justify-center items-center space-x-1 sm:space-x-2 text-white pagination-container">
-                <?php 
-                $query_params = $_GET; 
-                unset($query_params['page']); 
-                $base_query_string = http_build_query($query_params); 
-                if (!empty($base_query_string)) { 
-                    $base_query_string .= '&'; 
-                } 
-                $num_links_around_current = 2; 
+                <?php
+                $query_params = $_GET;
+                unset($query_params['page']);
+                $base_query_string = http_build_query($query_params);
+                if (!empty($base_query_string)) {
+                    $base_query_string .= '&';
+                }
+                $num_links_around_current = 2;
                 ?>
                 <?php if ($current_page > 1): ?>
                     <a href="?<?php echo $base_query_string; ?>page=<?php echo $current_page - 1; ?>" class="btn btn-secondary px-3 py-2 text-xs sm:px-4 sm:py-2 sm:text-sm">« Prev</a>
@@ -519,7 +512,7 @@ if ($db_conn_page_load->connect_error) {
             </div>
             <?php endif; ?>
 
-        <?php endif; ?> 
+        <?php endif; ?>
     </main>
 
     <footer class="bg-black py-4 text-center text-gray-600 text-sm border-t border-gray-800">
@@ -533,7 +526,7 @@ if ($db_conn_page_load->connect_error) {
              <h3 class="monument text-3xl font-bold gold mb-4">Congratulations!</h3>
             <p class="text-xl text-white mb-6">You have a new ride booking.</p>
             <button id="viewNewBookingBtn" class="btn btn-primary px-8 py-3 text-lg">
-                <i class="fas fa-times mr-2"></i> Close 
+                <i class="fas fa-times mr-2"></i> Close
             </button>
         </div>
     </div>
@@ -559,85 +552,153 @@ if ($db_conn_page_load->connect_error) {
         </div>
     </div>
 
+    <div id="editBookingModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="closeEditModalBtn"><i class="fas fa-times"></i></button>
+            <h3 class="monument text-2xl font-bold gold mb-6 text-center">Edit <span class="text-white">Booking</span></h3>
+            <form id="editBookingForm" onsubmit="submitEditForm(event)">
+                <input type="hidden" id="editBookingId" name="booking_id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="editName" class="form-label">Name</label>
+                        <input type="text" id="editName" name="name" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" id="editEmail" name="email" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editPhone" class="form-label">Phone</label>
+                        <input type="tel" id="editPhone" name="phone" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editVehicle" class="form-label">Vehicle</label>
+                        <input type="text" id="editVehicle" name="vehicle" class="form-input" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="editPickupLocation" class="form-label">Pickup Location</label>
+                        <input type="text" id="editPickupLocation" name="pickupLocation" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editPickupDate" class="form-label">Pickup Date</label>
+                        <input type="date" id="editPickupDate" name="pickupDate" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="editPickupTime" class="form-label">Pickup Time</label>
+                        <input type="time" id="editPickupTime" name="pickupTime" class="form-input" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="editDropoffLocation" class="form-label">Dropoff Location</label>
+                        <input type="text" id="editDropoffLocation" name="dropoffLocation" class="form-input" required>
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="editStatus" class="form-label">Status</label>
+                        <select id="editStatus" name="status" class="form-input">
+                            <option value="Pending">Pending</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="editNotes" class="form-label">Notes</label>
+                        <textarea id="editNotes" name="notes" rows="3" class="form-input"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 text-right">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <audio id="newBookingSound" src="../assets/sounds/notification.mp3" preload="auto"></audio>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const statusSelects = document.querySelectorAll('.status-select');
-    const notificationContainer = document.getElementById('notificationContainer');
-    const newBookingAlertModal = document.getElementById('newBookingAlertModal');
-    const viewNewBookingBtn = document.getElementById('viewNewBookingBtn'); 
-    const newBookingSound = document.getElementById('newBookingSound');
-    const bookingDetailsModal = document.getElementById('bookingDetailsModal');
-    const closeBookingDetailsModalBtn = document.getElementById('closeBookingDetailsModalBtn');
-    const copyableFields = document.querySelectorAll('.copyable-field'); 
-
-    let currentBookingIdForModal = null;
-    let currentBookingIdForDetailsModal = null;
-    let isUpdatingStatus = false; 
-
+    // --- Reusable Notification Function ---
     function showNotification(type, title, message) {
+        const notificationContainer = document.getElementById('notificationContainer');
         const notification = document.createElement('div');
-        notification.classList.add('notification', type); 
-        notification.innerHTML = `
-            <div class="notification-icon">${type === 'success' ? '<i class="fas fa-check-circle"></i>' : (type === 'error' ? '<i class="fas fa-times-circle"></i>' : '<i class="fas fa-info-circle"></i>')}</div>
-            <div class="notification-content">
-                <h4 class="notification-title">${title}</h4>
-                <p class="notification-message">${message}</p>
-            </div>
-            <div class="notification-close"><i class="fas fa-times"></i></div>
-        `; 
+        notification.classList.add('notification', type);
+        notification.innerHTML = `<div class="notification-icon">${type === 'success' ? '<i class="fas fa-check-circle"></i>' : (type === 'error' ? '<i class="fas fa-times-circle"></i>' : '<i class="fas fa-info-circle"></i>')}</div><div class="notification-content"><h4 class="notification-title">${title}</h4><p class="notification-message">${message}</p></div><div class="notification-close"><i class="fas fa-times"></i></div>`;
         if(notificationContainer) {
             notificationContainer.appendChild(notification);
         } else {
             alert(`${title}: ${message}`);
             return;
         }
-
-        void notification.offsetWidth; 
+        void notification.offsetWidth;
         notification.classList.add('active');
-
         const timeoutId = setTimeout(() => hideNotification(notification), 5000);
-        
-        const closeButton = notification.querySelector('.notification-close');
-        if (closeButton) {
-            closeButton.addEventListener('click', () => {
-                clearTimeout(timeoutId); 
-                hideNotification(notification);
-            });
-        }
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            clearTimeout(timeoutId);
+            hideNotification(notification);
+        });
     }
 
     function hideNotification(notificationElement) {
-        if (!notificationElement || !notificationElement.classList.contains('active')) return; 
-        notificationElement.classList.remove('active'); 
-        notificationElement.addEventListener('transitionend', () => {
-            if (notificationElement.parentNode) { 
-                 notificationElement.remove();
-            }
-        }, { once: true }); 
+        if (!notificationElement || !notificationElement.classList.contains('active')) return;
+        notificationElement.classList.remove('active');
+        notificationElement.addEventListener('transitionend', () => notificationElement.remove(), { once: true });
     }
 
+    // --- Modal Handling ---
+    const modals = {
+        details: document.getElementById('bookingDetailsModal'),
+        edit: document.getElementById('editBookingModal'),
+        alert: document.getElementById('newBookingAlertModal')
+    };
+
+    function openModal(modal) {
+        if (modal) modal.classList.add('active');
+    }
+
+    function closeModal(modal) {
+        if (modal) modal.classList.remove('active');
+    }
+
+    // --- Event Listeners Setup ---
+    document.body.addEventListener('click', function(event) {
+        // View Details Button
+        if (event.target.closest('.view-details-btn')) {
+            event.preventDefault();
+            const bookingId = event.target.closest('.view-details-btn').dataset.bookingId;
+            openBookingDetailsModal(bookingId);
+        }
+
+        // Edit Button
+        if (event.target.closest('.edit-booking-btn')) {
+            event.preventDefault();
+            const bookingId = event.target.closest('.edit-booking-btn').dataset.bookingId;
+            openEditBookingModal(bookingId);
+        }
+
+        // Modal Close Buttons
+        if (event.target.closest('.modal-close-btn')) {
+            closeModal(event.target.closest('.modal-overlay'));
+        }
+        if (event.target.id === 'viewNewBookingBtn') {
+            closeModal(modals.alert);
+        }
+
+        // Click outside modal to close
+        if (event.target.classList.contains('modal-overlay')) {
+            closeModal(event.target);
+        }
+    });
+
+    // --- View Details Modal Logic ---
     function openBookingDetailsModal(bookingId) {
-        currentBookingIdForDetailsModal = bookingId;
+        console.log(`Fetching details for booking ID: ${bookingId}`);
+        // Reset content to loading state
+        const contentDiv = document.getElementById('modalBookingDetailsContent');
+        if (contentDiv) {
+            Array.from(contentDiv.getElementsByClassName('copyable-field')).forEach(el => el.textContent = 'Loading...');
+        }
 
-        ['detailId', 'detailName', 'detailEmail', 'detailPhone', 'detailVehicle', 'detailPickupLocation', 'detailDropoffLocation', 'detailPickupDate', 'detailPickupTime', 'detailStatus', 'detailCreatedAt', 'detailNotes']
-        .forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.textContent = 'Loading...';
-        });
-
-        fetch(`fetch_booking_details.php?id=${bookingId}`)
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(errData => {
-                        throw new Error(errData.message || `HTTP error! Status: ${response.status}`);
-                    }).catch(() => {
-                        return response.text().then(text => { throw new Error(`HTTP error! Status: ${response.status} - ${text.substring(0, 200)}`); });
-                    });
-                }
-                return response.json();
-            })
+        fetch(`fetch_booking_details.php?id=${bookingId}&json=true`)
+            .then(response => response.json())
             .then(data => {
                 if (data.success && data.booking) {
                     const booking = data.booking;
@@ -648,189 +709,152 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('detailVehicle').textContent = booking.vehicle ? booking.vehicle.charAt(0).toUpperCase() + booking.vehicle.slice(1) : '-';
                     document.getElementById('detailPickupLocation').textContent = booking.pickuplocation || '-';
                     document.getElementById('detailDropoffLocation').textContent = booking.dropofflocation || '-';
-                    document.getElementById('detailPickupDate').textContent = booking.pickupdate ? new Date(booking.pickupdate + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '-'; 
-                    document.getElementById('detailPickupTime').textContent = booking.pickuptime ? new Date('1970-01-01T' + booking.pickuptime + 'Z').toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' }) : '-'; 
+                    document.getElementById('detailPickupDate').textContent = booking.pickupdate ? new Date(booking.pickupdate + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '-';
+                    document.getElementById('detailPickupTime').textContent = booking.pickuptime ? new Date('1970-01-01T' + booking.pickuptime + 'Z').toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' }) : '-';
                     document.getElementById('detailStatus').textContent = booking.status || '-';
-                    document.getElementById('detailCreatedAt').textContent = booking.created_at ? new Date(booking.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '-';
+                    document.getElementById('detailCreatedAt').textContent = booking.created_at ? new Date(booking.created_at).toLocaleString() : '-';
                     document.getElementById('detailNotes').textContent = booking.notes || '-';
-
-                    if(bookingDetailsModal) {
-                        bookingDetailsModal.classList.add('active');
-                    }
+                    openModal(modals.details);
                 } else {
-                    showNotification('error', 'Error!', data.message || 'Could not fetch booking details.');
+                    showNotification('error', 'Error', data.message || 'Could not fetch booking details.');
                 }
             })
             .catch(error => {
-                console.error('Fetch booking details error:', error);
-                showNotification('error', 'Network Error!', `Could not fetch booking details: ${error.message}`);
+                console.error('Fetch details error:', error);
+                showNotification('error', 'Network Error', 'Failed to fetch booking details.');
             });
     }
 
-    function updateBookingStatus(bookingId, newStatus) {
-        if (isUpdatingStatus) {
-            showNotification('info', 'Working...', 'Previous update is still in progress.');
-            return;
-        }
-        isUpdatingStatus = true;
-
-fetch('update_booking_status.php', { 
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `action=update_booking_status&id=${bookingId}&status=${encodeURIComponent(newStatus)}`
-        })
-        .then(response => {
-            return response.text().then(text => {
-                try {
-                    const jsonData = JSON.parse(text);
-                    if (!response.ok) {
-                         throw new Error(jsonData.message || `Server error: ${response.status}`);
-                    }
-                    return jsonData;
-                } catch (e) {
-                    console.error("Failed to parse server response as JSON in updateBookingStatus:", text);
-                    throw new Error(`Unexpected server response. Check console for details. Response start: ${text.substring(0,100)}`);
+    // --- Edit Booking Modal Logic ---
+    function openEditBookingModal(bookingId) {
+        console.log(`Opening edit modal for booking ID: ${bookingId}`);
+        fetch(`fetch_booking_details.php?id=${bookingId}&json=true`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.booking) {
+                    const booking = data.booking;
+                    document.getElementById('editBookingId').value = booking.id;
+                    document.getElementById('editName').value = booking.name;
+                    document.getElementById('editEmail').value = booking.email;
+                    document.getElementById('editPhone').value = booking.phone;
+                    document.getElementById('editVehicle').value = booking.vehicle;
+                    document.getElementById('editPickupLocation').value = booking.pickuplocation;
+                    document.getElementById('editPickupDate').value = booking.pickupdate;
+                    document.getElementById('editPickupTime').value = booking.pickuptime;
+                    document.getElementById('editDropoffLocation').value = booking.dropofflocation;
+                    document.getElementById('editNotes').value = booking.notes;
+                    document.getElementById('editStatus').value = booking.status;
+                    openModal(modals.edit);
+                } else {
+                    showNotification('error', 'Error', data.message || 'Could not fetch booking details for editing.');
                 }
+            })
+            .catch(error => {
+                console.error('Fetch for edit error:', error);
+                showNotification('error', 'Network Error', 'Failed to fetch booking data for editing.');
             });
+    }
+
+    // --- Form Submission Logic (attached via onsubmit attribute in HTML) ---
+    window.submitEditForm = function(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        fetch('edit_booking.php', {
+            method: 'POST',
+            body: formData
         })
+        .then(response => response.json())
         .then(data => {
-            isUpdatingStatus = false;
             if (data.success) {
-                showNotification('success', 'Success!', data.message); // The message from PHP now contains email status
-                const selectElement = document.querySelector(`.status-select[data-booking-id="${bookingId}"]`);
-                if (selectElement) {
-                    selectElement.className = 'status-select w-full status-' + newStatus.replace(/\s+/g, '-');
-                }
+                closeModal(modals.edit);
+                showNotification('success', 'Success', data.message);
+                // Instead of full reload, you might want to update the row dynamically in a future version
+                setTimeout(() => location.reload(), 1500);
             } else {
-                showNotification('error', 'Update Failed!', data.message || `Failed to update booking ${bookingId} status.`);
+                showNotification('error', 'Error', data.message);
             }
         })
         .catch(error => {
-            isUpdatingStatus = false;
-            console.error('Update status error:', error);
-            showNotification('error', 'Network Error!', `Could not process status update: ${error.message}`);
+            console.error('Submit edit form error:', error);
+            showNotification('error', 'Network Error', 'Could not save changes.');
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Save Changes';
         });
     }
 
-    statusSelects.forEach(select => {
-        const currentStatus = select.value;
-        select.classList.add(`status-${currentStatus.replace(/\s+/g, '-')}`);
-
+    // --- Status Update Logic ---
+    document.querySelectorAll('.status-select').forEach(select => {
         select.addEventListener('change', function() {
-            this.className.split(' ').forEach(cls => {
-                if (cls.startsWith('status-') && cls !== 'status-select') {
-                    this.classList.remove(cls);
-                }
-            });
-            const newStatusVal = this.value;
-            this.classList.add(`status-${newStatusVal.replace(/\s+/g, '-')}`);
-            updateBookingStatus(this.dataset.bookingId, newStatusVal);
+            const bookingId = this.dataset.bookingId;
+            const newStatus = this.value;
+            // optimistic UI update
+            this.className = `status-select w-full status-${newStatus.replace(/\s+/g, '-')}`;
+            updateBookingStatus(bookingId, newStatus, this);
         });
     });
 
-    document.querySelectorAll('.view-details-btn').forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.preventDefault();
-            openBookingDetailsModal(this.dataset.bookingId);
-        });
-    });
-
-    if (closeBookingDetailsModalBtn) {
-        closeBookingDetailsModalBtn.addEventListener('click', function() {
-            if(bookingDetailsModal) {
-                bookingDetailsModal.classList.remove('active');
+    function updateBookingStatus(bookingId, newStatus, selectElement) {
+        const originalClassName = selectElement.className;
+        fetch('all-bookings.php', { // The handler is at the top of this same file
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: `action=update_booking_status&id=${bookingId}&status=${encodeURIComponent(newStatus)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('success', 'Status Updated', data.message);
+            } else {
+                showNotification('error', 'Update Failed', data.message);
+                selectElement.className = originalClassName; // Revert on failure
             }
-        });
-    }
-    
-    if (bookingDetailsModal) {
-        bookingDetailsModal.addEventListener('click', function(event) {
-            if (event.target === bookingDetailsModal) { 
-                bookingDetailsModal.classList.remove('active');
-            }
+        })
+        .catch(error => {
+            console.error('Update status error:', error);
+            showNotification('error', 'Network Error', 'Could not update status.');
+            selectElement.className = originalClassName; // Revert on network error
         });
     }
 
-    copyableFields.forEach(field => {
-        field.addEventListener('click', function() {
-            const textToCopy = this.textContent;
-            if (!textToCopy || textToCopy === '-' || textToCopy === 'Loading...') return;
-            navigator.clipboard.writeText(textToCopy)
-                .then(() => { showNotification('info', 'Copied!', `'${textToCopy.substring(0,30).replace(/\n/g, ' ')}...' copied.`); })
-                .catch(err => { 
-                    console.warn('Async clipboard copy failed, trying fallback:', err);
-                    const textArea = document.createElement('textarea');
-                    textArea.value = textToCopy;
-                    textArea.style.position = 'fixed'; textArea.style.left = '-999999px'; 
-                    document.body.appendChild(textArea);
-                    textArea.focus(); textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        showNotification('info', 'Copied!', `'${textToCopy.substring(0,30).replace(/\n/g, ' ')}...' copied (fallback).`);
-                    } catch (fallbackErr) {
-                        console.error('Fallback copy failed: ', fallbackErr);
-                        showNotification('error', 'Copy Failed!', 'Could not copy text.');
-                    } finally {
-                        document.body.removeChild(textArea);
-                    }
-                });
-        });
-    });
-
-    if (viewNewBookingBtn && newBookingAlertModal) {
-        viewNewBookingBtn.addEventListener('click', function() {
-            newBookingAlertModal.classList.remove('active'); 
-        });
-    }
-
+    // --- New Booking Polling ---
+    // (This part seems okay, leaving it as is)
+    const newBookingSound = document.getElementById('newBookingSound');
     let lastAlertedBookingId_allBookings = sessionStorage.getItem('lastAlertedBookingId_allBookingsPage');
-
     function checkNewBookingsOnAllBookingsPage() {
-        fetch('check_new_bookings.php') 
-            .then(response => {
-                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-                return response.json();
-            })
+        fetch('check_new_bookings.php')
+            .then(response => response.json())
             .then(data => {
                 if (data.success && data.bookings.length > 0) {
-                    data.bookings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); 
-                    const latestBooking = data.bookings[0];
-
+                    const latestBooking = data.bookings.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
                     if (latestBooking.id && latestBooking.id.toString() !== lastAlertedBookingId_allBookings) {
-                        if (newBookingSound) {
-                            newBookingSound.play().catch(error => console.warn('Audio play failed:', error));
-                        }
-                        currentBookingIdForModal = latestBooking.id;
-                        if (newBookingAlertModal) {
-                            newBookingAlertModal.classList.add('active');
-                        }
+                        if (newBookingSound) newBookingSound.play().catch(e => console.warn("Audio play failed:", e));
+                        openModal(modals.alert);
                         lastAlertedBookingId_allBookings = latestBooking.id.toString();
                         sessionStorage.setItem('lastAlertedBookingId_allBookingsPage', lastAlertedBookingId_allBookings);
                         showNotification('info', 'New Booking!', `Booking ID ${latestBooking.id} has arrived.`);
                     }
                 }
-            })
-            .catch(error => {
-                // console.warn('Error checking for new bookings on all-bookings page:', error); 
-            });
+            }).catch(error => {});
     }
-
-    const pollingInterval_allBookings = 11000;
-    let newBookingCheckInterval_allBookings = setInterval(checkNewBookingsOnAllBookingsPage, pollingInterval_allBookings);
-
+    let newBookingCheckInterval = setInterval(checkNewBookingsOnAllBookingsPage, 11000);
     document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") {
-            clearInterval(newBookingCheckInterval_allBookings);
-        } else {
-            checkNewBookingsOnAllBookingsPage(); 
-            clearInterval(newBookingCheckInterval_allBookings); 
-            newBookingCheckInterval_allBookings = setInterval(checkNewBookingsOnAllBookingsPage, pollingInterval_allBookings);
+        clearInterval(newBookingCheckInterval);
+        if (document.visibilityState === "visible") {
+            checkNewBookingsOnAllBookingsPage();
+            newBookingCheckInterval = setInterval(checkNewBookingsOnAllBookingsPage, 11000);
         }
     });
-    checkNewBookingsOnAllBookingsPage(); 
+    checkNewBookingsOnAllBookingsPage();
 });
 </script>
+
+
 </body>
 </html>
